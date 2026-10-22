@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OTTO Sampler</title>
+    <script src="theme.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="/main.js" defer></script>
+  </head>
+
+  <body>
+    <!-- 1. Header & Titlebar -->
+    <header class="titlebar">
+      <div class="brand">
+        <img class="brand-wordmark" src="assets/wordmark.svg" alt="OTTO Sampler" draggable="false" />
+      </div>
+      <div class="controls">
+
+        <button id="always-on-top-btn" class="icon-btn" data-hint="切换始终置顶" aria-pressed="false" aria-label="置顶"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/ui-icons.svg#pin"/></svg></button>
+        <button id="minimize-btn" class="window-btn" data-hint="最小化" aria-label="最小化"><svg viewBox="0 0 16 16"><path d="M3 8h10"/></svg></button>
+        <button id="maximize-btn" class="window-btn" data-hint="最大化" aria-label="最大化"><svg viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10"/></svg></button>
+        <button id="close-btn" class="window-btn close-btn" data-hint="关闭" aria-label="关闭"><svg viewBox="0 0 16 16"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+      </div>
+    </header>
+
+    <!-- 2. Main App Area -->
+    <main class="app-container">
+
+      <!-- Favorites & Scan Control Strip -->
+      <section class="favorites-strip">
+        <div class="fav-selector-box">
+          <span class="strip-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/ui-icons.svg#folder"/></svg></span>
+          <select id="favorites-select" class="fav-select">
+            <option value="">-- 请选择路径收藏夹 --</option>
+          </select>
+        </div>
+        <button id="scan-btn" class="scan-button toolbar-icon-btn" data-hint="增量扫描" aria-label="增量扫描"><span class="scan-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/ui-icons.svg#scan"/></svg></span></button>
+        <button id="favorites-btn" class="icon-btn toolbar-icon-btn" data-hint="路径管理" aria-label="路径管理"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/ui-icons.svg#folder-manage"/></svg></button>
+        <div id="control-hint" class="control-hint" role="status" aria-live="polite"></div>
+        <button id="settings-btn" class="icon-btn toolbar-icon-btn" data-hint="设置" aria-label="设置"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/ui-icons.svg#settings"/></svg></button>
+      </section>
+
+      <!-- Scan Progress & Statistics Bar -->
+      <section id="scan-status-bar" class="status-bar hidden">
+        <div class="spinner"></div>
+        <span id="scan-status-text">正在扫描目录...</span>
+      </section>
+
+      <section id="scan-stats-bar" class="stats-bar hidden">
+        <span class="stats-badge added">新规: <span id="stats-added">0</span></span>
+        <span class="stats-badge updated">更新: <span id="stats-updated">0</span></span>
+        <span class="stats-badge deleted">清理: <span id="stats-deleted">0</span></span>
+        <span class="stats-badge total">总量: <span id="stats-total">0</span></span>
+        <button id="close-stats-btn" aria-label="关闭扫描统计" class="close-stats-btn">×</button>
+      </section>
+
+      <!-- Search & Filters -->
+      <section class="search-section">
+        <div class="search-box">
+          <span class="search-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/ui-icons.svg#search"/></svg></span>
+          <input type="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="search-input" placeholder="文件名或拼音；空格分词，* 通配" autofocus />
+          <button class="clear-btn" id="clear-btn" aria-label="清空搜索">×</button>
+        </div>
+        <div class="results-toolbar">
+        <div class="filters">
+          <button class="filter-chip active" data-type="all">全部</button>
+          <button class="filter-chip" data-type="audio">音频 🎵</button>
+          <button class="filter-chip" data-type="video">视频 🎬</button>
+        </div>
+        <div class="sort-control">
+          <label for="sort-select" class="sort-label">排序</label>
+          <select id="sort-select" class="sort-select">
+            <option value="filename:asc">文件名 A-Z</option>
+            <option value="filename:desc">文件名 Z-A</option>
+            <option value="duration:asc">长度 短-长</option>
+            <option value="duration:desc">长度 长-短</option>
+            <option value="mtime:desc">修改时间 新-旧</option>
+            <option value="mtime:asc">修改时间 旧-新</option>
+          </select>
+        </div>
+        </div>
+      </section>
+
+      <!-- Results Viewport -->
+      <section class="results-section">
+        <div class="section-header">
+          <span class="section-title">搜索结果(<span id="results-count">0</span>)</span>
+        </div>
+
+        <!-- Results Scrollable List -->
+        <div class="results-list" id="results-list">
+          <!-- Dynamically populated via JS -->
+          <div class="empty-state">
+            <span class="empty-icon">🎧</span>
+            <h3>暂无搜索匹配结果</h3>
+            <p>请在上方下拉选择收藏夹并点击“增量扫描”来建立本地文件缓存索引！</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Player Controls Footer -->
+      <footer class="player-footer">
+        <div class="player-visual">
+          <div class="visualizer-bars">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+          </div>
+          <div class="player-info">
+            <span id="playing-title">暂未播放</span>
+            <span id="player-time" class="player-time">00:00 / 00:00</span>
+          </div>
+        </div>
+
+        <div class="player-timeline">
+          <input type="range" id="progress-slider" aria-label="播放进度" min="0" max="100" value="0" step="0.1" />
+        </div>
+
+        <div class="player-controls">
+          <button id="play-pause-btn" class="player-btn control-play-btn" aria-label="播放"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/ui-icons.svg#play"/></svg></button>
+          <button id="stop-btn" class="player-btn secondary-btn" data-hint="停止播放并重置" aria-label="停止播放"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/ui-icons.svg#stop"/></svg></button>
+          <div class="volume-control">
+            <span class="vol-icon" id="vol-icon" role="img" aria-label="音量"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/ui-icons.svg#volume"/></svg></span>
+            <input type="range" id="volume-slider" aria-label="音量" min="0" max="100" value="80" />
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <!-- 3. Modal Overlay for Favorites Manager -->
+    <div id="favorites-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/ui-icons.svg#folder-manage"/></svg>路径管理</h3>
+          <button id="modal-close-btn" aria-label="关闭路径管理" class="modal-close">×</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- List of existing favorites -->
+          <div class="modal-section">
+            <label class="modal-label">当前已存组合</label>
+            <div class="favorites-list" id="modal-favorites-list">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Create / Edit Form -->
+          <div class="modal-section form-section">
+            <label class="modal-label" for="fav-name-input">新建/编辑名称</label>
+            <input type="text" id="fav-name-input" placeholder="例如: EDM素材库, 个人录音室" />
+
+            <div class="paths-manager-box">
+              <div class="paths-manager-header">
+                <label class="modal-label" style="margin-bottom: 0;">路径</label>
+                <button id="add-path-btn" class="add-path-btn"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/ui-icons.svg#plus"/></svg>添加路径</button>
+              </div>
+              <div class="selected-paths-list" id="selected-paths-list">
+                <div class="no-paths-tip">暂无路径，请点击“添加路径”</div>
+              </div>
+            </div>
+
+            <p class="modal-tip">一个组合可包含多个文件夹。</p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="fav-save-btn" class="modal-btn primary"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/ui-icons.svg#save"/></svg>保存组合</button>
+          <button id="fav-default-btn" class="modal-btn secondary"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/ui-icons.svg#pin"/></svg>设为默认</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="properties-modal" class="modal-overlay hidden">
+      <div class="modal-content properties-modal-content">
+        <div class="modal-header">
+          <h3 id="properties-title">属性</h3>
+          <button id="properties-close-btn" aria-label="关闭属性" class="modal-close">×</button>
+        </div>
+        <div class="modal-body properties-body">
+          <div id="properties-fields" class="properties-fields"></div>
+        </div>
+      </div>
+    </div>
+    <div id="settings-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="modal-content settings-modal-content">
+        <div class="modal-header">
+          <h3 id="settings-title">设置</h3>
+          <button id="settings-close-btn" class="modal-close" aria-label="关闭设置">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-section">
+            <label class="modal-label" for="palette-select">设备主题</label>
+            <select id="palette-select" class="sort-select">
+              <option value="mpc2000xl">Akai MPC2000XL</option>
+              <option value="mpc60">Akai MPC60</option>
+              <option value="sp1200">E-mu SP-1200</option>
+              <option value="sp404">Roland SP-404MKII</option>
+            </select>
+          </div>
+          <fieldset class="theme-options">
+            <legend class="modal-label">外观</legend>
+            <label class="theme-option"><input type="radio" name="theme" value="light" />日间</label>
+            <label class="theme-option"><input type="radio" name="theme" value="dark" />夜间</label>
+            <label class="theme-option"><input type="radio" name="theme" value="system" />随系统</label>
+          </fieldset>
+          <label class="startup-scan-option"><input type="checkbox" id="startup-scan" checked />启动时增量扫描</label>
+          <div class="reset-actions">
+            <button id="reset-preferences-btn" class="reset-action icon-btn">重置偏好设置</button>
+            <button id="reset-index-btn" class="reset-action icon-btn">重置文件名索引库</button>
+          </div>
+          <div id="settings-confirm" class="hidden">
+            <p id="settings-confirm-text"></p>
+            <div class="confirm-actions">
+              <button id="settings-confirm-cancel" class="icon-btn">取消</button>
+              <button id="settings-confirm-apply" class="icon-btn">确认重置</button>
+            </div>
+          </div>
+          <p id="settings-status" role="status" aria-live="polite"></p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

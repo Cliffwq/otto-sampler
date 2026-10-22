@@ -1,0 +1,55 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+release/
+tools/slimming-source-hashes.json
+tools/build-*.log
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Build outputs and generated metadata
+target/
+/src-tauri/gen/
+*.exe
+*.msi
+*.pdb
+
+# Local data, diagnostics and task continuity
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+/test_sample.wav
+/db_debug.rs
+/test_sql/
+/artifacts/
+/tools/*.png
+
+# Unused mobile icon exports (desktop application)
+/src-tauri/icons/android/
+/src-tauri/icons/ios/
+
+# Local secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key

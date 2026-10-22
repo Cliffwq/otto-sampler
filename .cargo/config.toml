@@ -1,0 +1,35 @@
+# Shared by desktop builds and cargo test/check.
+# Keep compiled dependencies, but do not accumulate incremental or debug data.
+[build]
+target-dir = "src-tauri/target"
+
+# MSVC emits PDBs even with Rust debug=0/strip. Suppress linker debug output.
+[target.'cfg(target_env = "msvc")']
+rustflags = ["-C", "link-arg=/DEBUG:NONE"]
+
+[profile.dev]
+debug = 0
+incremental = false
+codegen-units = 16
+strip = "debuginfo"
+
+# Optimize dependencies once; keep the application's own dev code unoptimized.
+# Fewer codegen units reduce duplicated code in dependency libraries.
+[profile.dev.package."*"]
+opt-level = "z"
+codegen-units = 1
+
+# Build scripts/procedural macros do not ship in the app. Optimize their size too.
+[profile.release.build-override]
+opt-level = "z"
+codegen-units = 1
+
+[profile.test]
+debug = 0
+incremental = false
+
+[profile.release]
+debug = 0
+incremental = false
+strip = "debuginfo"
+codegen-units = 1

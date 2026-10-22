@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>OTTO Sampler — Index and search demo</title>
+<style>
+*{box-sizing:border-box}body{margin:0;width:1000px;height:750px;background:#e9e5db;color:#293b40;font-family:'Segoe UI','Microsoft YaHei UI',sans-serif}header{height:110px;padding:22px 28px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #b4b8b2}h1{font-size:26px;margin:0 0 5px;font-weight:650;letter-spacing:.3px}.sub{font-size:13px;color:#5d6969}.steps{display:flex;gap:8px}.step{font-size:15px;padding:10px 14px;border:1px solid #a6b0ac;border-radius:5px}.step.active{background:#344d5b;color:#fff;border-color:#344d5b}.step span{display:block;font-size:11px;margin-top:3px;opacity:.8}main{height:602px;margin:18px 26px;display:grid;grid-template-columns:326px 1fr;gap:22px}.source{border:1px solid #a7b0ae;border-radius:7px;padding:18px;background:#f2f0e9}.label{font-size:14px;font-weight:650;letter-spacing:.5px}.folder{margin-top:23px}.folder h2{font-size:16px;margin:0 0 10px;display:flex;align-items:center;gap:8px}.folder h2:before{content:'';width:18px;height:13px;border:2px solid #637b88;border-radius:2px}.file{font-size:15px;padding:9px 8px;border-bottom:1px solid #d1d4ce;white-space:nowrap}.file.added{background:#dbe5cf;border-left:3px solid #6c8449}.tag{font-size:11px;float:right;color:#435e2a;font-weight:650;margin-top:3px}.location{margin-top:16px;color:#6b7776;font-size:12px;line-height:1.5}.app{position:relative;border:1px solid #8c9a9b;border-radius:7px;overflow:hidden;background:#dcd8cc;box-shadow:0 3px 8px #293b4010}iframe{display:block;border:0;width:100%;height:100%}.callout{position:absolute;left:8px;right:8px;top:138px;border:2px solid #ab493e;border-radius:5px;height:31px;pointer-events:none;display:none}.callout.scan{top:52px;left:247px;right:auto;width:42px;height:43px}.cursor{position:absolute;left:265px;top:85px;display:none;pointer-events:none;width:25px;height:30px}footer{height:92px;margin:0 26px;padding:14px 18px;border-left:4px solid #ab493e;background:#f5f2eb}#caption{font-size:21px;line-height:1.4;font-weight:600}#english{font-size:14px;margin-top:5px;color:#566666}.progress{position:absolute;bottom:0;left:0;height:5px;background:#ab493e;width:0}small{font-size:11px;color:#65726f;position:absolute;bottom:10px;right:28px}
+</style>
+<header><div><h1>OTTO Sampler</h1><div class="sub">索引、扫描与搜索 / Index, scan & search</div></div><div class="steps"><div class="step active">01 建索引<span>Index files</span></div><div class="step">02 增量扫描<span>Scan changes</span></div><div class="step">03 混合搜索<span>Mixed search</span></div></div></header>
+<main><section class="source"><div class="label">原来的文件夹 / Original folders</div><div class="folder"><h2>Drums</h2><div class="file">大鼓Kick.wav</div><div class="file">军鼓Snare.wav</div><div class="file">踩镲HiHat.wav</div><div class="file added" id="new-file" hidden>大鼓Kick Dry.wav <span class="tag">新增 NEW</span></div></div><div class="folder"><h2>Textures</h2><div class="file">雨声Rain.wav</div><div class="file">街道Street.wav</div><div class="file">脚步Footsteps.wav</div></div><div class="location">文件保留在原处，不复制、不搬家。<br>Files stay in their original folders.</div></section><section class="app"><iframe src="/src/index.html"></iframe><div class="callout"></div><svg class="cursor" viewBox="0 0 25 30"><path d="M2 2 21 19 12 20 9 28Z" fill="#f9f7ef" stroke="#ab493e" stroke-width="2"/></svg></section></main>
+<div class="progress"></div>
+<script>
+window.scene=(step,cn,en,progress,focus='')=>{
+document.querySelectorAll('.step').forEach((el,i)=>el.classList.toggle('active',i===step));
+window.demoCaption={cn,en,progress};
+document.querySelector('.progress').style.width=progress+'%';
+const box=document.querySelector('.callout');box.style.display=focus?'block':'none';box.className='callout '+focus;
+document.querySelector('.cursor').style.display=focus==='scan'?'block':'none';
+};
+</script>
+</html>

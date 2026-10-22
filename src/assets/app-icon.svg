@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="OTTO Sampler">
+  <defs>
+    <linearGradient id="case" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e4dfd0"/>
+      <stop offset="1" stop-color="#bcb7aa"/>
+    </linearGradient>
+    <linearGradient id="pad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5a6670"/>
+      <stop offset="1" stop-color="#394852"/>
+    </linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#cc6550"/>
+      <stop offset="1" stop-color="#a43c32"/>
+    </linearGradient>
+    <linearGradient id="ivory" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e9e1c9"/>
+      <stop offset="1" stop-color="#c6bfa8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Equal 76–80 unit margins inside the MPC60-style case. -->
+  <rect x="64" y="64" width="896" height="896" rx="150" fill="url(#case)" stroke="#807e73" stroke-width="12"/>
+
+  <rect x="140" y="144" width="744" height="200" rx="24" fill="#aebba4" stroke="#34434d" stroke-width="12"/>
+  <g fill="#344639">
+    <rect x="184" y="224" width="24" height="40" rx="8"/>
+    <rect x="230" y="206" width="24" height="76" rx="8"/>
+    <rect x="276" y="218" width="24" height="52" rx="8"/>
+    <rect x="322" y="180" width="24" height="128" rx="8"/>
+    <rect x="368" y="200" width="24" height="88" rx="8"/>
+    <rect x="414" y="190" width="24" height="108" rx="8"/>
+    <rect x="460" y="226" width="24" height="36" rx="8"/>
+    <rect x="506" y="212" width="24" height="64" rx="8"/>
+    <rect x="552" y="184" width="24" height="120" rx="8"/>
+    <rect x="598" y="208" width="24" height="72" rx="8"/>
+    <rect x="644" y="196" width="24" height="96" rx="8"/>
+    <rect x="690" y="222" width="24" height="44" rx="8"/>
+    <rect x="736" y="214" width="24" height="60" rx="8"/>
+    <rect x="782" y="226" width="24" height="36" rx="8"/>
+    <rect x="828" y="234" width="24" height="20" rx="8"/>
+  </g>
+
+  <!-- A three-by-three pad bank with a separate right-hand knob column. -->
+  <rect x="140" y="384" width="744" height="496" rx="22" fill="#899ba8" stroke="#526572" stroke-width="6"/>
+  <g stroke="#263844" stroke-width="6">
+    <rect x="164" y="408" width="136" height="136" rx="14" fill="url(#pad)"/>
+    <rect x="324" y="408" width="136" height="136" rx="14" fill="url(#red)"/>
+    <rect x="484" y="408" width="136" height="136" rx="14" fill="url(#pad)"/>
+    <rect x="164" y="568" width="136" height="136" rx="14" fill="url(#pad)"/>
+    <rect x="324" y="568" width="136" height="136" rx="14" fill="url(#pad)"/>
+    <rect x="484" y="568" width="136" height="136" rx="14" fill="url(#pad)"/>
+    <rect x="164" y="728" width="136" height="136" rx="14" fill="url(#ivory)"/>
+    <rect x="324" y="728" width="136" height="136" rx="14" fill="url(#pad)"/>
+    <rect x="484" y="728" width="136" height="136" rx="14" fill="url(#pad)"/>
+  </g>
+  <g fill="#34434d" stroke="#263844" stroke-width="6">
+    <circle cx="752" cy="476" r="46"/>
+    <circle cx="752" cy="636" r="46"/>
+    <circle cx="752" cy="796" r="46"/>
+  </g>
+  <g fill="none" stroke="#e4dfd0" stroke-width="10" stroke-linecap="round">
+    <path d="M752 446v20"/>
+    <path d="m773 615-14 14"/>
+    <path d="m731 775 14 14"/>
+  </g>
+</svg>

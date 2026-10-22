@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 184 26" width="184" height="26" role="img" aria-label="OTTO Sampler">
+  <title>OTTO Sampler</title>
+  <g fill="#34443d" fill-rule="evenodd">
+    <path d="M5 3h10l4 4v12l-4 4H5l-4-4V7Zm1 4-1 1v10l1 1h8l1-1V8l-1-1Z"/>
+    <path d="M22 3h18v4h-7v16h-4V7h-7Z"/>
+    <path d="M43 3h18v4h-7v16h-4V7h-7Z"/>
+    <path d="M68 3h10l4 4v12l-4 4H68l-4-4V7Zm1 4-1 1v10l1 1h8l1-1V8l-1-1Z"/>
+  </g>
+  <g fill="none" stroke="#34443d" stroke-width="2.1" stroke-linecap="square" stroke-linejoin="round">
+    <path d="M100 7h-6q-3 0-3 3t3 3h4q3 0 3 3t-3 3h-7"/>
+    <path d="M106 11h5q3 0 3 3v5h-6q-3 0-3-2.5t3-2.5h6"/>
+    <path d="M119 19v-8h4q3 0 3 3v5m0-6q0-2 3-2h1q3 0 3 3v5"/>
+    <path d="M138 23V11h4q4 0 4 4t-4 4h-4"/>
+    <path d="M151 6v11q0 2 2 2"/>
+    <path d="M158 15h9q0-4-4.5-4t-4.5 4q0 4 4.5 4h3.5"/>
+    <path d="M173 19v-8m0 3q1-3 6-3"/>
+  </g>
+</svg>

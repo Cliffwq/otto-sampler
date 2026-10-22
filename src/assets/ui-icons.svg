@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="scan" viewBox="0 0 24 24"><path d="M8 3H4a1 1 0 0 0-1 1v4M16 3h4a1 1 0 0 1 1 1v4M21 16v4a1 1 0 0 1-1 1h-4M8 21H4a1 1 0 0 1-1-1v-4M7 12h10M12 7v10"/></symbol>
+  <symbol id="folder" viewBox="0 0 24 24"><path d="M3 6a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+  <symbol id="folder-manage" viewBox="0 0 24 24"><path d="M11 20H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v2M3 9h10"/><path d="M21 12a4 4 0 0 0-5 5l-4 4 2 2 4-4a4 4 0 0 0 5-5l-3 2-1-1Z"/></symbol>
+  <symbol id="settings" viewBox="0 0 24 24"><path d="m9 3 1-2h4l1 2 2 1 3-.2 2 3-1.4 2v3L22 14l-2 3-3-.2-2 1-1 3h-4l-1-3-2-1-3 .2-2-3 1.4-2v-3L2 7l2-3L7 4Z" transform="translate(0 1) scale(1 .95)"/><circle cx="12" cy="11" r="3"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></symbol>
+  <symbol id="save" viewBox="0 0 24 24"><path d="M4 3h13l4 4v14H3V3ZM7 3v6h9V3M7 21v-8h10v8"/></symbol>
+  <symbol id="pin" viewBox="0 0 24 24"><path d="m8 3 8 0-1 7 4 4v2H5v-2l4-4ZM12 16v6"/></symbol>
+  <symbol id="trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 6 6"/></symbol>
+  <symbol id="play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7Z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="pause" viewBox="0 0 24 24"><path d="M7 5h3v14H7ZM14 5h3v14h-3Z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="stop" viewBox="0 0 24 24"><path d="M6 6h12v12H6Z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="volume" viewBox="0 0 24 24"><path d="M3 9h4l5-5v16l-5-5H3ZM16 8a6 6 0 0 1 0 8M19 5a10 10 0 0 1 0 14"/></symbol>
+  <symbol id="volume-low" viewBox="0 0 24 24"><path d="M3 9h4l5-5v16l-5-5H3ZM16 8a6 6 0 0 1 0 8"/></symbol>
+  <symbol id="volume-off" viewBox="0 0 24 24"><path d="M3 9h4l5-5v16l-5-5H3ZM17 9l5 6M22 9l-5 6"/></symbol>
+</svg>
