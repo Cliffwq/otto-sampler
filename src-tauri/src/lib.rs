@@ -1,9 +1,11 @@
 mod db_maintenance;
+mod filename_pinyin;
+mod updates;
 
-use pinyin::{ToPinyin, ToPinyinMulti};
 use rusqlite::{params, Connection, Result as SqlResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+#[cfg(test)]
 use std::collections::HashSet;
 use std::env;
 use std::ffi::OsStr;
@@ -56,7 +58,7 @@ const EDGE_REHIDE_GAP_PX: f64 = 36.0;
 const EDGE_POLL_MS: u64 = 50;
 const DRAG_POLL_MS: u64 = 8;
 const DRAG_TIMEOUT_SECS: u64 = 60;
-const PINYIN_INDEX_VERSION: i32 = 4;
+const PINYIN_INDEX_VERSION: i32 = 7;
 const WINDOW_STATE_FILENAME: &str = tauri_plugin_window_state::DEFAULT_FILENAME;
 const COMPACT_WINDOW_MIGRATION_MARKER: &str = ".compact-window-default-v2";
 
@@ -147,6 +149,8 @@ pub enum AppError {
     Io(String),
     #[error("Shell command failed: {0}")]
     Shell(String),
+    #[error("Pinyin error: {0}")]
+    Pinyin(String),
 }
 
 impl Serialize for AppError {
@@ -356,6 +360,7 @@ struct SearchName {
     lower: String,
     units: Vec<Arc<SearchUnit>>,
     ascii_characters: u128,
+    encoded_index: String,
 }
 
 // Cached values depend only on the immutable filename, not on file metadata or
@@ -364,75 +369,110 @@ struct SearchName {
 struct SearchNameCache {
     names: HashMap<String, Arc<SearchName>>,
     order: VecDeque<String>,
-    characters: HashMap<char, Arc<SearchUnit>>,
+    characters: HashMap<Vec<String>, Arc<SearchUnit>>,
 }
 
 static SEARCH_NAME_CACHE: OnceLock<Mutex<SearchNameCache>> = OnceLock::new();
 
-fn pinyin_variants_for_char(c: char) -> Vec<String> {
-    let mut variants = vec![c.to_lowercase().collect::<String>()];
-    if let Some(default) = c.to_pinyin() {
-        variants.push(default.plain().to_owned());
-        if let Some(multi) = c.to_pinyin_multi() {
-            variants.extend(multi.into_iter().map(|p| p.plain().to_owned()));
+fn character_variants(text: &str) -> Result<Vec<Vec<String>>> {
+    Ok(text
+        .chars()
+        .zip(filename_pinyin::readings(text).map_err(AppError::Pinyin)?)
+        .map(|(c, readings)| {
+            let mut variants = vec![c.to_string()];
+            for reading in readings {
+                if !variants.contains(&reading) {
+                    variants.push(reading);
+                }
+            }
+            variants
+        })
+        .collect())
+}
+
+fn build_pinyin_search_index(text: &str) -> Result<String> {
+    Ok(encode_search_name(cached_search_name(text)?.as_ref()))
+}
+
+fn decode_pinyin_index(lower: &str, encoded: &str, version: i32) -> Option<Vec<Vec<String>>> {
+    if version != PINYIN_INDEX_VERSION || encoded.len() > lower.len().saturating_mul(48) + 64 {
+        return None;
+    }
+    let units: Vec<Vec<String>> = serde_json::from_str(encoded).ok()?;
+    if units.len() != lower.chars().count() {
+        return None;
+    }
+    for (c, variants) in lower.chars().zip(&units) {
+        if variants.is_empty()
+            || variants.len() > filename_pinyin::MAX_READINGS + 1
+            || variants[0] != c.to_string()
+        {
+            return None;
+        }
+        if variants
+            .iter()
+            .skip(1)
+            .any(|v| v.is_empty() || v.len() > 8 || !v.bytes().all(|b| b.is_ascii_lowercase()))
+        {
+            return None;
         }
     }
-    variants.sort();
-    variants.dedup();
-    variants
+    Some(units)
 }
 
-fn build_pinyin_search_index(text: &str) -> String {
-    // A linear-size representation: alternatives for each character, never
-    // Cartesian products of pronunciations or fixed-length substring windows.
-    serde_json::to_string(
-        &text
-            .chars()
-            .map(pinyin_variants_for_char)
-            .collect::<Vec<_>>(),
-    )
-    .expect("character strings serialize")
+fn encode_search_name(name: &SearchName) -> String {
+    name.encoded_index.clone()
 }
 
-fn cached_search_name(filename: &str) -> Arc<SearchName> {
+fn cached_search_name(filename: &str) -> Result<Arc<SearchName>> {
+    Ok(cached_indexed_search_name(filename, None)?.0)
+}
+
+fn cached_indexed_search_name(
+    filename: &str,
+    saved: Option<(&str, i32)>,
+) -> Result<(Arc<SearchName>, Option<String>)> {
     let mut cache = SEARCH_NAME_CACHE
         .get_or_init(Default::default)
         .lock()
         .unwrap();
     if let Some(name) = cache.names.get(filename) {
-        return name.clone();
+        let repair = saved
+            .filter(|(data, v)| *v != PINYIN_INDEX_VERSION || *data != name.encoded_index)
+            .map(|_| encode_search_name(name));
+        return Ok((name.clone(), repair));
     }
     let lower = filename.to_lowercase();
-    let units: Vec<Arc<SearchUnit>> = lower
-        .chars()
-        .map(|c| {
+    let decoded = saved.and_then(|(data, version)| decode_pinyin_index(&lower, data, version));
+    let needs_repair = saved.is_some() && decoded.is_none();
+    let variants = match decoded {
+        Some(v) => v,
+        None => character_variants(&lower)?,
+    };
+    let encoded_index = serde_json::to_string(&variants).expect("character strings serialize");
+    let repair = needs_repair.then(|| encoded_index.clone());
+    let units: Vec<Arc<SearchUnit>> = variants
+        .into_iter()
+        .map(|variants| {
             cache
                 .characters
-                .entry(c)
-                .or_insert_with(|| {
-                    Arc::new(
-                        pinyin_variants_for_char(c)
-                            .into_iter()
-                            .map(|value| value.chars().collect())
-                            .collect(),
-                    )
-                })
+                .entry(variants.clone())
+                .or_insert_with(|| Arc::new(variants.iter().map(|v| v.chars().collect()).collect()))
                 .clone()
         })
         .collect();
     let ascii_characters = units
         .iter()
-        .flat_map(|unit| unit.iter())
-        .flat_map(|spelling| spelling.iter())
+        .flat_map(|u| u.iter())
+        .flat_map(|v| v.iter())
         .filter(|c| c.is_ascii())
         .fold(0u128, |bits, c| bits | (1u128 << *c as u32));
     let name = Arc::new(SearchName {
         lower,
         units,
         ascii_characters,
+        encoded_index,
     });
-    // About one entry per distinct filename; 65k names fit typical local
-    // libraries. Old names leave FIFO rather than creating stale search rows.
     if cache.names.len() >= 65_536 {
         if let Some(oldest) = cache.order.pop_front() {
             cache.names.remove(&oldest);
@@ -440,7 +480,34 @@ fn cached_search_name(filename: &str) -> Arc<SearchName> {
     }
     cache.order.push_back(filename.to_owned());
     cache.names.insert(filename.to_owned(), name.clone());
-    name
+    Ok((name, repair))
+}
+
+#[derive(Debug)]
+struct SearchIndexRepair {
+    path: String,
+    filename: String,
+    old_version: i32,
+    old_index: String,
+    new_index: String,
+}
+
+fn persist_search_repairs(conn: &Connection, repairs: &[SearchIndexRepair]) -> SqlResult<()> {
+    if repairs.is_empty() || !conn.is_autocommit() || conn.is_readonly("main")? {
+        return Ok(());
+    }
+    let timeout: u32 = conn.pragma_query_value(None, "busy_timeout", |r| r.get(0))?;
+    conn.busy_timeout(Duration::ZERO)?;
+    let result = (|| {
+        let tx = conn.unchecked_transaction()?;
+        for repair in repairs {
+            tx.execute("UPDATE files SET pinyin_index=?1, pinyin_index_version=?2 WHERE path=?3 AND filename=?4 AND pinyin_index_version=?5 AND pinyin_index=?6",
+                params![repair.new_index,PINYIN_INDEX_VERSION,repair.path,repair.filename,repair.old_version,repair.old_index])?;
+        }
+        tx.commit()
+    })();
+    let restored = conn.busy_timeout(Duration::from_millis(u64::from(timeout)));
+    result.and(restored)
 }
 
 struct SmallGlob {
@@ -771,13 +838,23 @@ impl FilenameQuery {
         }
     }
 
+    #[cfg(test)]
     fn matches(&self, filename: &str) -> bool {
+        self.try_matches(filename).unwrap()
+    }
+
+    #[cfg(test)]
+    fn try_matches(&self, filename: &str) -> Result<bool> {
         if self.terms.is_empty() {
-            return true;
+            return Ok(true);
         }
-        let name = cached_search_name(filename);
+        let name = cached_search_name(filename)?;
+        Ok(self.matches_name(&name))
+    }
+
+    fn matches_name(&self, name: &SearchName) -> bool {
         if self.terms.len() == 1 {
-            return self.terms[0].matches(&name);
+            return self.terms[0].matches(name);
         }
         let mut representatives: Vec<&SearchTerm> = Vec::new();
         let mut groups: Vec<SearchSpanGroup> = Vec::new();
@@ -1680,12 +1757,7 @@ where
                                 }
 
                                 // Generate pinyin index for search
-                                let stem = file_path
-                                    .file_stem()
-                                    .unwrap_or_default()
-                                    .to_string_lossy()
-                                    .to_string();
-                                let pinyin_index = build_pinyin_search_index(&stem);
+                                let pinyin_index = build_pinyin_search_index(&filename)?;
 
                                 conn.execute(
                                     "UPDATE files SET size = ?1, mtime = ?2, pinyin_index = ?3, duration_secs = ?4, pinyin_index_version = ?5 WHERE path = ?6",
@@ -1695,11 +1767,9 @@ where
                             } else if db_pinyin_index_version < PINYIN_INDEX_VERSION {
                                 // A search-index upgrade is not a changed media
                                 // file: do not probe duration or inflate updates.
-                                let stem =
-                                    file_path.file_stem().unwrap_or_default().to_string_lossy();
                                 conn.execute(
                                     "UPDATE files SET pinyin_index = ?1, pinyin_index_version = ?2 WHERE path = ?3",
-                                    params![build_pinyin_search_index(&stem), PINYIN_INDEX_VERSION, file_path_str],
+                                    params![build_pinyin_search_index(&filename)?, PINYIN_INDEX_VERSION, file_path_str],
                                 )?;
                             }
                         } else {
@@ -1713,12 +1783,7 @@ where
                             }
 
                             // New file
-                            let stem = file_path
-                                .file_stem()
-                                .unwrap_or_default()
-                                .to_string_lossy()
-                                .to_string();
-                            let pinyin_index = build_pinyin_search_index(&stem);
+                            let pinyin_index = build_pinyin_search_index(&filename)?;
                             let filename_lower = filename.to_lowercase();
 
                             conn.execute(
@@ -1851,8 +1916,14 @@ fn search_file_page(
         _ => "filename_lower",
     };
     let sort_direction = if sort_dir == "desc" { "DESC" } else { "ASC" };
-    let mut sql = String::from(
-        "SELECT files.path, files.filename, files.size, files.mtime, files.file_type, files.duration_secs
+    let query = FilenameQuery::compile(query);
+    let index_column = if query.terms.is_empty() {
+        "''"
+    } else {
+        "files.pinyin_index"
+    };
+    let mut sql = format!(
+        "SELECT files.path, files.filename, files.size, files.mtime, files.file_type, files.duration_secs, {index_column}, files.pinyin_index_version
          FROM files
          JOIN folders ON folders.id = files.folder_id
          JOIN favorite_paths fp ON fp.path = folders.path
@@ -1864,9 +1935,8 @@ fn search_file_page(
         sql.push_str(" AND files.file_type = ?");
         values.push(rusqlite::types::Value::Text(file_type.to_owned()));
     }
-    let query = FilenameQuery::compile(query);
     // Filtering happens before the page offset. SQLite supplies the requested
-    // stable order, while the matcher never reads the old expanded pinyin blob.
+    // stable order. Current persisted indexes avoid invoking the pinyin engine.
     sql.push_str(&format!(
         " ORDER BY files.{} {}, files.filename_lower ASC, files.path ASC",
         sort_column, sort_direction
@@ -1877,14 +1947,18 @@ fn search_file_page(
     }
     let mut stmt = conn.prepare(&sql)?;
     let rows = stmt.query_map(rusqlite::params_from_iter(values), |row| {
-        Ok(FileRecord {
-            path: row.get(0)?,
-            filename: row.get(1)?,
-            size: row.get(2)?,
-            mtime: row.get(3)?,
-            file_type: row.get(4)?,
-            duration_secs: row.get(5)?,
-        })
+        Ok((
+            FileRecord {
+                path: row.get(0)?,
+                filename: row.get(1)?,
+                size: row.get(2)?,
+                mtime: row.get(3)?,
+                file_type: row.get(4)?,
+                duration_secs: row.get(5)?,
+            },
+            row.get::<_, String>(6)?,
+            row.get::<_, i32>(7)?,
+        ))
     })?;
     let mut records = Vec::with_capacity(SEARCH_PAGE_SIZE + 1);
     let mut matching_offset = if query.terms.is_empty() {
@@ -1892,10 +1966,24 @@ fn search_file_page(
     } else {
         offset as usize
     };
+    let mut repairs = Vec::new();
     for record in rows {
-        let record = record?;
-        if !query.matches(&record.filename) {
-            continue;
+        let (record, index, version) = record?;
+        if !query.terms.is_empty() {
+            let (name, repair) =
+                cached_indexed_search_name(&record.filename, Some((&index, version)))?;
+            if let Some(new_index) = repair {
+                repairs.push(SearchIndexRepair {
+                    path: record.path.clone(),
+                    filename: record.filename.clone(),
+                    old_index: index,
+                    old_version: version,
+                    new_index,
+                });
+            }
+            if !query.matches_name(&name) {
+                continue;
+            }
         }
         if matching_offset > 0 {
             matching_offset -= 1;
@@ -1905,6 +1993,11 @@ fn search_file_page(
         if records.len() > SEARCH_PAGE_SIZE {
             break;
         }
+    }
+    drop(stmt);
+    // Best effort only: a busy/read-only DB must not turn a valid search into an error.
+    if let Err(error) = persist_search_repairs(conn, &repairs) {
+        eprintln!("Deferred pinyin index repair: {error}");
     }
     let has_more = records.len() > SEARCH_PAGE_SIZE;
     if has_more {
@@ -2321,6 +2414,8 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            updates::check_for_updates,
+            updates::open_update_release,
             begin_window_drag,
             get_window_pin_state,
             toggle_window_pin,
@@ -2932,8 +3027,8 @@ mod tests {
     }
 
     #[test]
-    fn pinyin_matching_accepts_all_character_readings_without_initials() {
-        assert!(FilenameQuery::compile("chong").matches("重.wav"));
+    fn pinyin_matching_uses_character_readings_without_initials() {
+        assert!(FilenameQuery::compile("chong").matches("重庆.wav"));
         assert!(FilenameQuery::compile("zhong").matches("重.wav"));
         assert!(!FilenameQuery::compile("zhongchong").matches("重.wav"));
         assert!(FilenameQuery::compile("bei").matches("北京.wav"));
@@ -2956,7 +3051,7 @@ mod tests {
             ("sh shou", "手.wav", false),
             ("手 shou", "手手.wav", true),
             ("zhong chong", "重.wav", false),
-            ("zhong chong", "重重.wav", true),
+            ("zhong chong", "重量重庆.wav", true),
             ("ni ha", "你好.wav", true),
             ("n *i", "你.wav", false),
             ("a* b", "ab.wav", true),
@@ -2978,16 +3073,16 @@ mod tests {
                 "query={query:?}, name={filename:?}"
             );
         }
-        let long = "zhong".repeat(30);
-        assert!(FilenameQuery::compile(&format!("{long} chong"))
-            .matches(&format!("{}.wav", "重".repeat(31))));
-        assert!(!FilenameQuery::compile(&format!("{long} chong"))
-            .matches(&format!("{}.wav", "重".repeat(30))));
+        let long = "shou".repeat(40);
+        assert!(FilenameQuery::compile(&format!("{long} shou"))
+            .matches(&format!("{}.wav", "手".repeat(41))));
+        assert!(!FilenameQuery::compile(&format!("{long} shou"))
+            .matches(&format!("{}.wav", "手".repeat(40))));
         assert!(!FilenameQuery::compile(&vec!["a"; 30].join(" "))
             .matches(&format!("{}.ogg", "a".repeat(29))));
-        let equivalent = "z zh zho zhon zhong c ch cho chon chong";
-        assert!(!FilenameQuery::compile(equivalent).matches(&"重".repeat(9)));
-        assert!(FilenameQuery::compile(equivalent).matches(&"重".repeat(10)));
+        let equivalent = "s sh sho shou s sh sho shou s sh";
+        assert!(!FilenameQuery::compile(equivalent).matches(&"手".repeat(9)));
+        assert!(FilenameQuery::compile(equivalent).matches(&"手".repeat(10)));
     }
 
     #[test]
@@ -3011,6 +3106,7 @@ mod tests {
         let mut filenames = Vec::new();
         names("", 3, &mut filenames);
         for filename in filenames {
+            let source_name = cached_search_name(&filename).unwrap();
             let mut boundaries: Vec<_> = filename.char_indices().map(|(i, _)| i).collect();
             boundaries.push(filename.len());
             let all_spans: Vec<Vec<(usize, usize)>> = terms
@@ -3022,9 +3118,12 @@ mod tests {
                     }
                     for start in 0..boundaries.len() - 1 {
                         for end in start + 1..boundaries.len() {
-                            if term.matches(&cached_search_name(
-                                &filename[boundaries[start]..boundaries[end]],
-                            )) {
+                            if term.matches(&SearchName {
+                                lower: filename[boundaries[start]..boundaries[end]].to_owned(),
+                                units: source_name.units[start..end].to_vec(),
+                                ascii_characters: source_name.ascii_characters,
+                                encoded_index: String::new(),
+                            }) {
                                 spans.push((start, end));
                             }
                         }
@@ -3095,12 +3194,12 @@ mod tests {
 
     #[test]
     fn pinyin_search_has_no_pronunciation_product_or_query_length_cutoff() {
-        let filename = format!("{}.wav", "重".repeat(40));
-        let query = "zhongchong".repeat(20);
+        let filename = format!("{}.wav", "重量重庆".repeat(20));
+        let query = "zhongliangchongqing".repeat(20);
         assert!(query.len() > 128);
         assert!(FilenameQuery::compile(&query).matches(&filename));
         assert!(!FilenameQuery::compile(&(query + "错")).matches(&filename));
-        let compact = build_pinyin_search_index(&"重".repeat(40));
+        let compact = build_pinyin_search_index(&"重".repeat(40)).unwrap();
         let decoded: Vec<Vec<String>> = serde_json::from_str(&compact).unwrap();
         assert_eq!(decoded.len(), 40);
         assert!(compact.len() < 2_000);
@@ -3234,3 +3333,9 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod search_corpus_tests;
+
+#[cfg(test)]
+mod persisted_search_tests;

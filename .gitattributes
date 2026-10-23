@@ -1,0 +1,3 @@
+# Preserve exact upstream bytes for offline dictionary verification on Windows.
+src-tauri/vendor/pinyin-data/kHanyuPinlu.txt -text
+src-tauri/vendor/pinyin-data/LICENSE -text

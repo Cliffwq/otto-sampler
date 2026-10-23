@@ -8,8 +8,8 @@ OTTO Sampler is a local audio and video browser for Windows. Search across folde
 
 Open the [latest release](https://github.com/Cliffwq/otto-sampler/releases/latest) and download an installer from **Assets**:
 
-- [Windows x64 installer (EXE)](https://github.com/Cliffwq/otto-sampler/releases/download/v0.1.0/Otto-Sampler_0.1.0_x64-setup.exe): download, run and follow the installation steps.
-- [MSI installer](https://github.com/Cliffwq/otto-sampler/releases/download/v0.1.0/Otto-Sampler_0.1.0_x64_en-US.msi): an alternative installer; choose either format.
+- [Windows x64 installer (EXE)](https://github.com/Cliffwq/otto-sampler/releases/download/v0.1.1/Otto-Sampler_0.1.1_x64-setup.exe): download, run and follow the installation steps.
+- [MSI installer](https://github.com/Cliffwq/otto-sampler/releases/download/v0.1.1/Otto-Sampler_0.1.1_x64_en-US.msi): an alternative installer; choose either format.
 
 Supports Windows 10/11 (x64) and requires Microsoft Edge WebView2 Runtime. After installation, open the app, add your media folders and scan them to start searching.
 
@@ -44,7 +44,7 @@ Left: MPC60 light. Right: SP-404MKII dark. Screenshots use sample filenames. The
 1. **Add folders.** Open path management using the folder-and-wrench button. Enter a group name, add one or more folders, and save the group. You can make a frequently used group the default.
 2. **Create the index.** Select the saved group in the top bar and run an incremental scan. Scan again after adding or changing media; there is no need to import the entire library again.
 3. **Find and use a file.** Enter search terms, click audio to preview it, then drag a list item into the destination application. That application must support file drops and the file's format.
-4. **Adjust the workspace.** Use the gear button to choose a palette, light/dark mode and startup scanning. Drag the window to a screen edge to dock it. Window size and sort preferences are restored on the next launch.
+4. **Adjust the workspace.** Use the gear button to choose a palette, light/dark mode, startup scanning and update checks. Drag the window to a screen edge to dock it. Window size and sort preferences are restored on the next launch. Update checks are enabled at startup by default; when a newer release is available, the notice opens the official download page.
 
 Hover over a button to see its purpose in the top hint area. Resetting the filename index in settings clears the index but keeps folder groups and original media; scan again to rebuild it.
 
@@ -63,6 +63,8 @@ Search matches **filenames**, not audio content, and does not translate words. E
 | `ou shou` | Finds `ou shou.wav`, but does not reuse the `ou` inside `shou.wav` as a second match |
 | `kick*dry` | Only `*` is a wildcard, matching any number of characters; finds `Kick 01 Dry.wav` |
 | `100%`, `take_01` | Other punctuation, including `%` and `_`, matches literally |
+
+Pinyin is looked up character by character, without phrase interpretation. Characters use the readings listed in the frequency dictionary; missing characters use the Rust pinyin library's default reading. For example, “能” matches only `neng`, while “长” matches both `chang` and `zhang`. Conversion runs offline. Searches reuse saved pronunciations; older indexes upgrade automatically during scanning or searching, with no manual rebuild.
 
 Pinyin initials are not supported: `bj` does not match “北京” through pinyin.
 
@@ -93,9 +95,12 @@ Run the following commands from the repository root.
 ### Tests
 
 ```powershell
+node tools/check-pinyin-vendor.cjs
 cargo test --manifest-path src-tauri/Cargo.toml --locked --lib
 npm run test:ui
 ```
+
+For the optional read-only corpus audit, set `OTTO_CORPUS_DB` to a local index database and run `cargo test --manifest-path src-tauri/Cargo.toml --locked --lib audit_real_corpus -- --ignored --nocapture`. Character reading rules live in `src-tauri/src/filename_pinyin.rs`; the pinned frequency dictionary is included in the source tree.
 
 Rust tests use temporary media and isolated databases. Browser tests use Playwright with Edge and mock the Tauri interface; they do not access your media library. These tests do not cover native file transfers or installer execution.
 

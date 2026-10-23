@@ -347,6 +347,13 @@ body {
   font-family: var(--font-display);
 }
 
+/* WebView2 supplies its own clear icon; keep only our accessible clear button. */
+#search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
 #search-input::placeholder {
   color: var(--text-muted);
   opacity: 0.7;
@@ -1596,6 +1603,9 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
 /* Shared hint display and forgiving slider interaction surfaces. */
 .startup-scan-option { display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 13px; color: var(--text-main); }
 .startup-scan-option input { margin: 0; accent-color: var(--panel-ink); }
+.update-notice { display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: var(--panel-soft); border: 1px solid var(--panel-line); border-radius: 4px; color: var(--text-main); font-size: 13px; }
+#update-message { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.update-notice .icon-btn { padding: 4px 8px; flex-shrink: 0; }
 .stats-badge { font-family: var(--font-display); font-size: 13px; line-height: 20px; padding: 2px 6px; white-space: nowrap; }
 .card-duration, .stats-badge > span, .player-time {
   font-family: "Segoe UI", sans-serif; font-size: 15px; font-weight: 600;

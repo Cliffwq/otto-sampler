@@ -55,6 +55,12 @@
         <button id="close-stats-btn" aria-label="关闭扫描统计" class="close-stats-btn">×</button>
       </section>
 
+      <section id="update-notice" class="update-notice hidden" role="status" aria-live="polite">
+        <span id="update-message"></span>
+        <button id="open-update-btn" class="icon-btn" data-hint="打开官方下载页面">下载</button>
+        <button id="dismiss-update-btn" class="clear-btn" aria-label="关闭更新提示" data-hint="关闭更新提示">×</button>
+      </section>
+
       <!-- Search & Filters -->
       <section class="search-section">
         <div class="search-box">
@@ -206,6 +212,7 @@
             <label class="theme-option"><input type="radio" name="theme" value="system" />随系统</label>
           </fieldset>
           <label class="startup-scan-option"><input type="checkbox" id="startup-scan" checked />启动时增量扫描</label>
+          <label class="startup-scan-option"><input type="checkbox" id="startup-update" checked />启动时检查更新</label>
           <div class="reset-actions">
             <button id="reset-preferences-btn" class="reset-action icon-btn">重置偏好设置</button>
             <button id="reset-index-btn" class="reset-action icon-btn">重置文件名索引库</button>

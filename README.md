@@ -8,8 +8,8 @@ OTTO Sampler 是一个 Windows 本地音视频素材浏览器。把分散在不�
 
 打开 [最新 Release](https://github.com/Cliffwq/otto-sampler/releases/latest)，在 **Assets** 中下载安装包：
 
-- [Windows x64 安装程序（EXE）](https://github.com/Cliffwq/otto-sampler/releases/download/v0.1.0/Otto-Sampler_0.1.0_x64-setup.exe)：下载后运行，按提示安装。
-- [MSI 安装包](https://github.com/Cliffwq/otto-sampler/releases/download/v0.1.0/Otto-Sampler_0.1.0_x64_en-US.msi)：另一种安装方式，二选一即可。
+- [Windows x64 安装程序（EXE）](https://github.com/Cliffwq/otto-sampler/releases/download/v0.1.1/Otto-Sampler_0.1.1_x64-setup.exe)：下载后运行，按提示安装。
+- [MSI 安装包](https://github.com/Cliffwq/otto-sampler/releases/download/v0.1.1/Otto-Sampler_0.1.1_x64_en-US.msi)：另一种安装方式，二选一即可。
 
 支持 Windows 10/11（x64），需要 Microsoft Edge WebView2 Runtime。安装后打开程序，添加素材文件夹并扫描即可开始搜索。
 
@@ -44,7 +44,7 @@ OTTO Sampler 是一个 Windows 本地音视频素材浏览器。把分散在不�
 1. **添加素材目录。** 打开顶部的“文件夹＋扳手”按钮，在路径管理中输入组合名称，添加一个或多个文件夹，然后保存组合。常用组合可以设为默认。
 2. **建立索引。** 在顶部选择刚保存的组合，点击增量扫描。以后添加或修改素材时，再扫描即可，不需要重新导入整个素材库。
 3. **查找并使用。** 输入关键词，单击音频试听，按住列表中的文件直接拖到目标软件。目标软件需要支持该文件格式和文件拖入。
-4. **调整工作方式。** 在齿轮设置中选择配色、日夜模式和启动扫描；把窗口拖到屏幕侧边即可收纳。窗口尺寸和排序偏好会在下次启动时恢复。
+4. **调整工作方式。** 在齿轮设置中选择配色、日夜模式、启动扫描和更新检查；把窗口拖到屏幕侧边即可收纳。窗口尺寸和排序偏好会在下次启动时恢复。默认启动时检查更新，发现新版后可点击提示打开官方下载页面。
 
 鼠标停在按钮上时，顶部提示区会显示它的用途。设置中的“重置文件名索引库”会清空索引，保留路径组合和原始素材，之后可以重新扫描。
 
@@ -63,6 +63,8 @@ OTTO Sampler 是一个 Windows 本地音视频素材浏览器。把分散在不�
 | `ou shou` | 能找到 `ou shou.wav`，但不会把 `shou.wav` 中的 `ou` 重复算作另一个匹配 |
 | `kick*dry` | 只有 `*` 是通配符，表示任意长度的内容；能找到 `Kick 01 Dry.wav` |
 | `100%`、`take_01` | `%`、`_` 等其他符号按原字符匹配 |
+
+拼音按单字查询，不判断词组：优先使用频率词典收录的读音，未收录的字使用 Rust 拼音库的默认读音。例如“能”只匹配 `neng`，“长”同时匹配 `chang` 和 `zhang`。处理完全离线。搜索复用已保存的拼音；旧索引会在扫描或搜索时自动升级，无需手动重建。
 
 不支持拼音首字母缩写，例如 `bj` 不会因拼音而匹配“北京”。
 
@@ -93,11 +95,14 @@ npm run tauri -- dev -- --locked
 ### 测试
 
 ```powershell
+node tools/check-pinyin-vendor.cjs
 cargo test --manifest-path src-tauri/Cargo.toml --locked --lib
 npm run test:ui
 ```
 
 Rust 测试使用临时素材和隔离数据库；界面测试使用 Playwright 与 Edge，并模拟 Tauri 接口，不操作个人素材库。它们不覆盖实际的系统拖放和安装过程。
+
+可选的真实素材库检查以只读方式运行：设置环境变量 `OTTO_CORPUS_DB` 为本机索引数据库路径，然后执行 `cargo test --manifest-path src-tauri/Cargo.toml --locked --lib audit_real_corpus -- --ignored --nocapture`。单字读音规则位于 `src-tauri/src/filename_pinyin.rs`，固定版本的频率词典随源码提供。
 
 原生侧边收纳检查可用 `tools/test-window-docking.ps1 -AppProcessId <PID>`。它会移动指定程序的窗口，请使用测试实例。
 

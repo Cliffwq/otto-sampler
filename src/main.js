@@ -234,6 +234,7 @@ async function initApp() {
   setupAudioPlayer();
   setupEventListeners();
   await setupWindowControls();
+  if (startupUpdateEnabled()) void checkStartupUpdate();
   if (activeFavorite && startupScanEnabled()) {
     void triggerIncrementalScan();
   }
@@ -242,6 +243,22 @@ async function initApp() {
 function startupScanEnabled() {
   try { return localStorage.getItem("otto-sampler-startup-scan") !== "false"; }
   catch { return true; }
+}
+
+function startupUpdateEnabled() {
+  try { return localStorage.getItem("otto-sampler-startup-update") !== "false"; }
+  catch { return true; }
+}
+
+async function checkStartupUpdate() {
+  try {
+    const update = await invoke("check_for_updates");
+    if (!update || !startupUpdateEnabled()) return;
+    document.getElementById("update-message").textContent = `发现新版本 ${update.version}`;
+    document.getElementById("update-notice").classList.remove("hidden");
+  } catch (error) {
+    console.debug("Update check unavailable:", error);
+  }
 }
 
 // Load favorites lists from database
@@ -777,6 +794,20 @@ async function triggerIncrementalScan() {
 // Bind standard events
 function setupEventListeners() {
   setupResetSettings();
+  const startupUpdate = document.getElementById("startup-update");
+  startupUpdate.checked = startupUpdateEnabled();
+  startupUpdate.addEventListener("change", () => {
+    localStorage.setItem("otto-sampler-startup-update", String(startupUpdate.checked));
+    if (!startupUpdate.checked) document.getElementById("update-notice").classList.add("hidden");
+  });
+  window.addEventListener("otto-reset-preferences", () => { startupUpdate.checked = true; });
+  document.getElementById("dismiss-update-btn").addEventListener("click", () => {
+    document.getElementById("update-notice").classList.add("hidden");
+  });
+  document.getElementById("open-update-btn").addEventListener("click", async () => {
+    try { await invoke("open_update_release"); }
+    catch { document.getElementById("update-message").textContent = "无法打开下载页面，请稍后重试"; }
+  });
   const startupScan = document.getElementById("startup-scan");
   startupScan.checked = startupScanEnabled();
   startupScan.addEventListener("change", () => {
@@ -1109,7 +1140,7 @@ function setupResetSettings() {
     status.textContent = "正在重置…";
     try {
       if (kind === "preferences") {
-        for (const key of ["otto-sampler-theme", "otto-sampler-palette", "otto-sampler-sort", "otto-sampler-volume", "otto-sampler-startup-scan"]) localStorage.removeItem(key);
+        for (const key of ["otto-sampler-theme", "otto-sampler-palette", "otto-sampler-sort", "otto-sampler-volume", "otto-sampler-startup-scan", "otto-sampler-startup-update"]) localStorage.removeItem(key);
         window.dispatchEvent(new Event("otto-reset-preferences"));
         currentSortField = "filename";
         currentSortDir = "asc";
