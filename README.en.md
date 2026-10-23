@@ -134,3 +134,7 @@ The database and preferences are created in the current user's data directories.
 When changing the drag icon, update both `src-tauri/icons/32x32.png` and the embedded PNG in `src/assets/drag-icon.js`. The browser test checks that they match.
 
 `.cargo/config.toml` disables debug symbols and incremental compilation to reduce disk usage. To check workspace size, run `powershell -NoProfile -File tools/check-size.ps1`. It uses a 3 GB budget by default and returns exit code 2 when exceeded; this check is separate from the build commands above.
+
+## License
+
+Copyright 2026 cliffwq. Licensed under the [Apache License 2.0](LICENSE). Third-party dependencies remain subject to their respective licenses.

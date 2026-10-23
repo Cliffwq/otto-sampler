@@ -134,3 +134,7 @@ npm run tauri -- build --no-bundle -- --locked
 修改拖拽图标时，同时更新 `src-tauri/icons/32x32.png` 与 `src/assets/drag-icon.js` 中的内嵌 PNG；界面测试会检查二者一致。
 
 `.cargo/config.toml` 关闭调试符号和增量编译，以减少磁盘占用。需要检查工作区大小时，可运行 `powershell -NoProfile -File tools/check-size.ps1`；该工具默认以 3 GB 为预算，超出时返回退出码 2，不影响上述构建命令。
+
+## 许可证
+
+Copyright 2026 cliffwq。项目采用 [Apache License 2.0](LICENSE)。第三方依赖遵循各自的许可证。
